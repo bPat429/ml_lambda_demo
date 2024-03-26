@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  nlp-demo-lambda
+
+  SAM template for nlp-demo-lambda
+
+########################################################################
+#
+# Parameters
+#
+########################################################################
+Parameters:
+  MongoDBUriParameter:
+    Type: String
+    Default: ""
+    Description: Mongo DB URI
+  MongoDBNameParameter:
+    Type: String
+    Default: ""
+    Description: Mongo DB Name
+  MongoDBUserParameter:
+    Type: String
+    Default: ""
+    Description: MongoDB user name
+  MongoDBUserPassParameter:
+    Type: String
+    Default: ""
+    Description: MongoDB user password
+  MongoDBHostParameter:
+    Type: String
+    Default: ""
+    Description: Mongo DB host
+  ModelBucketNameParameter:
+    Type: String
+    Default: ""
+    Description: s3 bucket name
+
+# No point declaring globals when there's only one function
+
+########################################################################
+#
+# Resources:
+#
+########################################################################
+Resources:
+  NlpDemoLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # Need to use a docker image because necessary libraries (torch, transformers, etc.) are too large otherwise
+      PackageType: Image
+      Timeout: 300
+      MemorySize: 3008
+      EphemeralStorage:
+        Size: 4098
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref ModelBucketNameParameter
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref ModelBucketNameParameter
+          MONGODB_DB_NAME: !Ref MongoDBNameParameter
+          MONGODB_URI: !Ref MongoDBUriParameter
+          MONGODB_USER: !Ref MongoDBUserParameter
+          MONGODB_PASS: !Ref MongoDBUserPassParameter
+          MONGODB_HOST: !Ref MongoDBHostParameter
+    Metadata:
+      DockerTag: nlp_demo_image
+      DockerContext: ./src
+      Dockerfile: Dockerfile
+
+Outputs:
+  NlpDemoLambdaFunctionArn:
+    Description: "NLP Lambda function ARN"
+    Value: !GetAtt NlpDemoLambdaFunction.Arn
