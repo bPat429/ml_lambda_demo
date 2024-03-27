@@ -64,9 +64,7 @@ def check_sent_collection(db_handler, full_sents, normalised_sents):
         unprocessed_sent_indexes (int[]): A list of indexes for unprocessed sents.
     """
     # check mongodb database for sents
-    matching_sents_dict = db_handler.find_many_sents(
-        {SENTS_DB_NORM_KEY: normalised_sents}
-    )
+    matching_sents_dict = db_handler.find_many_sents(normalised_sents)
     if len(matching_sents_dict) > 0:
         # Format results into a list of (sent_index, is_repeat, processed_sent) tuples
         repeat_sent_tuples = [
@@ -93,7 +91,7 @@ def check_sent_collection(db_handler, full_sents, normalised_sents):
         ]
     else:
         processed_sents = {}
-        unprocessed_sent_indexes = [range(len(normalised_sents))]
+        unprocessed_sent_indexes = list(range(len(normalised_sents)))
     return processed_sents, unprocessed_sent_indexes
 
 
@@ -121,7 +119,12 @@ class DbHandler:
         """Mutex lock implementation using mongodb"""
         lock_acquired = False
         while not lock_acquired:
+            # Lambda has an init phase of 10 seconds. A cold start is guaranteed to take longer,
+            # so we force a timeout here to avoid a lambda locking the mutex before being
+            # prematurely timed out. This also avoids constantly spamming MongoDB for the lock
+            time.sleep(10)
             # Try to lock the mutex
+            logger.info("Attempting to lock mutex")
             res = self.lock_col.update_one(
                 {"_id": MONGO_LOCK_ID}, {"$set": {"locked": True}}, upsert=True
             )
@@ -129,11 +132,10 @@ class DbHandler:
             # then the modified count > 0. If it's already locked, the modified count == 0s
             # If the record didn't exist, the modified_count is 0, but the upserted_id is not None.
             # Otherwise the upserted_id is None
-            lock_acquired = res.modified_count > 0 or res.upserted_id
-            # implement a delay to avoid spamming mongodb and eating up cpu time
-            # Use 10 seconds because model loading takes a long time, so losing 10 seconds isn't
-            # proportionally significant
-            time.sleep(10)
+            lock_acquired = res.modified_count > 0 or (res.upserted_id is not None)
+            logger.info(
+                "lock result %d, %s", res.modified_count, (res.upserted_id is not None)
+            )
 
     def unlock_mutex(self):
         """Unlock the mutex lock"""
@@ -162,7 +164,7 @@ class DbHandler:
         try:
             if normalised_sents and len(normalised_sents) > 0:
                 logger.info(
-                    "Sentencess passed, looking for %d documents", len(normalised_sents)
+                    "Sentences passed, looking for %d documents", len(normalised_sents)
                 )
                 # Using 'cursor_type=CursorType.EXHAUST' to get all results immediately causes an
                 #  error: database error: OP_QUERY is no longer supported.

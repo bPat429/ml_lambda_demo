@@ -23,6 +23,7 @@ packaging==23.2
 pathos==0.3.2
 pox==0.3.4
 ppft==1.7.6.8
+protobuf==5.26.0
 pycparser==2.21
 PyExecJS==1.5.1
 pymongo==3.11.2
@@ -33,6 +34,7 @@ regex==2023.12.25
 requests==2.31.0
 s3transfer==0.10.0
 safetensors==0.4.2
+sentencepiece==0.2.0
 six==1.16.0
 sympy==1.12
 tokenizers==0.15.2

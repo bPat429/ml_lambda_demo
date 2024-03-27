@@ -31,20 +31,26 @@ logger.info("Connected to db")
 # two lambdas are spun up at similar times. To handle this I'm implementing a mutex lock with
 # mongodb, and a check that model_handler is None. This way, if the lambdas are in separate
 # environments, they must still wait, but can both load the models if needed.
-db_handler.lock_mutex()
 try:
     # If the model_handler has been created by another lambda in the same environment, this will
     # be shared and we don't need to recreate it.
     model_handler
     logger.info("Model already loaded, skipping download")
 except NameError:
-    logger.info("Model not found, initiating download")
-    download_new_model()
-    logger.info("Model downloaded")
+    db_handler.lock_mutex()
+    try:
+        # Check again if the model_handler has been created since we started trying to acquire the
+        # lock
+        model_handler
+        logger.info("Model already loaded, skipping download")
+    except NameError:
+        logger.info("Model not found, initiating download")
+        download_new_model()
+        logger.info("Model downloaded")
 
-    model_handler = ModelHandler()
-    logger.info("Model and Tokenizer loaded")
-db_handler.unlock_mutex()
+        model_handler = ModelHandler()
+        logger.info("Model and Tokenizer loaded")
+    db_handler.unlock_mutex()
 
 
 def lambda_handler(event, context) -> None:

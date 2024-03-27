@@ -13,9 +13,9 @@ def normalise_sent(sent):
     # Important to normalise the sentence before checking the mongodb table to avoid similar
     # sentences being processed and stored twice with identical results
     # Convert to lowercase
-    normalised_sent = sent.lower()
+    normalised_val = sent.lower()
     # Convert emojis to plain text
-    normalise_sent = demoji.replace_with_desc(normalise_sent, sep="")
+    normalised_val = demoji.replace_with_desc(normalised_val, sep="")
     # Convert non ascii characters to ascii equivalent
-    normalise_sent = unidecode(normalise_sent)
-    return normalise_sent.strip()
+    normalised_val = unidecode(normalised_val)
+    return normalised_val.strip()

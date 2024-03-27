@@ -12,7 +12,7 @@ import torch
 # AutoModel is the class for loading a trained model from saved parameters, and running tokenised
 # data through that model
 # AutoTokenizer is the class for loading a trained tokenizer, and tokenizing/detokenizing data
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelWithLMHead, AutoTokenizer
 
 
 class ModelHandler:
@@ -21,10 +21,13 @@ class ModelHandler:
     def __init__(self):
         """Load the tokenizer and model from the downloaded model files"""
         # Load the model and tokenizer from /tmp/
+        # Model is t5-base-finetuned-emotion, found at
+        # https://huggingface.co/mrm8488/t5-base-finetuned-emotion?text=I+wish+you+were+here+but+it+is+impossible
+        # Model fine-tuned by mrm8488
         self.tokenizer = AutoTokenizer.from_pretrained(
             MODEL_CHECKPOINT, cache_dir=WRITEABLE_DIR, local_files_only=True
         )
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(
+        self.model = AutoModelWithLMHead.from_pretrained(
             MODEL_CHECKPOINT, cache_dir=WRITEABLE_DIR, local_files_only=True
         )
 
@@ -44,18 +47,10 @@ class ModelHandler:
         # Tokenize a list of sents, creating a list of tokenized sents
         inputs = self.tokenizer(
             normalised_sents,
-            truncation=True,
-            padding="max_length",
-            max_length=128,
             return_tensors="pt",
         )
         # Run the list of tokenized sents through the model
-        summaries = self.model.generate(**inputs, max_new_tokens=16)
+        summaries = self.model.generate(**inputs, max_length=2)
         # Detokenize the resulting processed sents
-        new_processed_sents = [
-            self.tokenizer.decode(
-                result, skip_special_tokens=True, clean_up_tokenization_spaces=False
-            )
-            for result in summaries
-        ]
+        new_processed_sents = [self.tokenizer.decode(result) for result in summaries]
         return new_processed_sents

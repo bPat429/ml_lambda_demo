@@ -16,7 +16,7 @@ SENT_LIST_KEY = "sent_list"
 # Location of writeable memory
 WRITEABLE_DIR = "/tmp/"
 # filename of model on s3 bucket
-SENT_MODEL_NAME = "sent_processing_model"
+SENT_MODEL_NAME = "t5-base-finetuned-emotion"
 SENT_MODEL_FILE = SENT_MODEL_NAME + ".zip"
 MODEL_ZIP_LOCATION = WRITEABLE_DIR + SENT_MODEL_FILE
 MODEL_CHECKPOINT = WRITEABLE_DIR + SENT_MODEL_NAME

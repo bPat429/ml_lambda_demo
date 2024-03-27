@@ -1,4 +1,7 @@
 AWS deployable lambda function for processing strings with a model from HuggingFace
+Demo model used is t5-base-finetuned-emotion
+for emotion recognition in text, fine-tuned by mrm8488
+https://huggingface.co/mrm8488/t5-base-finetuned-emotion?text=I+wish+you+were+here+but+it+is+impossible
 
 See demo.py for example invocation of lambda
 
