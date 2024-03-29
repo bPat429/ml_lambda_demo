@@ -28,9 +28,15 @@ db_handler = DbHandler()
 logger.info("Connected to db")
 
 # The download_new_model() and initialising the model_handler steps have race conditions where
-# two lambdas are spun up at similar times. To handle this I'm implementing a mutex lock with
-# mongodb, and a check that model_handler is None. This way, if the lambdas are in separate
-# environments, they must still wait, but can both load the models if needed.
+# one lambda is invoked in the same environment before the other lambda finishes downloading the new
+# model. In this case the model is deleted and the first lambda will fail to read the model into
+# memory.
+# N.B. I've not yet found the AWS documentation confirming whether two lambda instances can run
+# simultaneously in the same environment. As such, I'm assuming they can.
+# Also, a mutex is most efficiently done with the threading library's mutex, because it guarantees
+# it can only lock for invocations in the same environment (we don't care otherwise).
+# I implemented a MongoDB lock because it was interesting, but it's definitely a less efficient
+# method than threading's mutex due to operating over all instances in all environments.
 try:
     # If the model_handler has been created by another lambda in the same environment, this will
     # be shared and we don't need to recreate it.
